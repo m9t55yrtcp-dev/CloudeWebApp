@@ -4,9 +4,14 @@ namespace ClaudeWebApp.UseCases;
 
 public interface ISampleUseCase
 {
-    Task<IEnumerable<SampleDto>> GetAllSamplesAsync();
-    Task<SampleDto?> GetSampleByIdAsync(int id);
-    Task<SampleDto> CreateSampleAsync(SampleDto sampleDto);
-    Task<bool> UpdateSampleAsync(int id, SampleDto sampleDto);
+    Task<PagedResult<SampleResponse>> GetAllSamplesAsync(
+        int page = 1,
+        int pageSize = 20,
+        string? sortBy = null,
+        bool descending = false,
+        string? nameFilter = null);
+    Task<SampleResponse?> GetSampleByIdAsync(int id);
+    Task<SampleResponse> CreateSampleAsync(SampleRequest request);
+    Task<bool> UpdateSampleAsync(int id, SampleRequest request);
     Task<bool> DeleteSampleAsync(int id);
 }

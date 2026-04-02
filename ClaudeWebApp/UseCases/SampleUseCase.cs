@@ -13,24 +13,53 @@ public class SampleUseCase : ISampleUseCase
         _context = context;
     }
 
-    public async Task<IEnumerable<SampleDto>> GetAllSamplesAsync()
+    public async Task<PagedResult<SampleResponse>> GetAllSamplesAsync(
+        int page = 1,
+        int pageSize = 20,
+        string? sortBy = null,
+        bool descending = false,
+        string? nameFilter = null)
     {
-        var samples = await _context.Samples.ToListAsync();
-        return samples.Select(s => new SampleDto
+        var query = _context.Samples.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(nameFilter))
+            query = query.Where(s => s.Name.Contains(nameFilter));
+
+        query = sortBy?.ToLower() switch
         {
-            Id = s.Id,
-            Name = s.Name,
-            Description = s.Description,
-            CreatedAt = s.CreatedAt
-        });
+            "name" => descending ? query.OrderByDescending(s => s.Name) : query.OrderBy(s => s.Name),
+            "createdat" => descending ? query.OrderByDescending(s => s.CreatedAt) : query.OrderBy(s => s.CreatedAt),
+            _ => query.OrderBy(s => s.Id)
+        };
+
+        var totalCount = await query.CountAsync();
+        var items = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(s => new SampleResponse
+            {
+                Id = s.Id,
+                Name = s.Name,
+                Description = s.Description,
+                CreatedAt = s.CreatedAt
+            })
+            .ToListAsync();
+
+        return new PagedResult<SampleResponse>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize
+        };
     }
 
-    public async Task<SampleDto?> GetSampleByIdAsync(int id)
+    public async Task<SampleResponse?> GetSampleByIdAsync(int id)
     {
         var sample = await _context.Samples.FindAsync(id);
         if (sample == null) return null;
 
-        return new SampleDto
+        return new SampleResponse
         {
             Id = sample.Id,
             Name = sample.Name,
@@ -39,41 +68,37 @@ public class SampleUseCase : ISampleUseCase
         };
     }
 
-    public async Task<SampleDto> CreateSampleAsync(SampleDto sampleDto)
+    public async Task<SampleResponse> CreateSampleAsync(SampleRequest request)
     {
         var sample = new Sample
         {
-            Name = sampleDto.Name,
-            Description = sampleDto.Description,
+            Name = request.Name,
+            Description = request.Description,
             CreatedAt = DateTime.UtcNow
         };
 
         _context.Samples.Add(sample);
         await _context.SaveChangesAsync();
 
-        sampleDto.Id = sample.Id;
-        sampleDto.CreatedAt = sample.CreatedAt;
-        return sampleDto;
+        return new SampleResponse
+        {
+            Id = sample.Id,
+            Name = sample.Name,
+            Description = sample.Description,
+            CreatedAt = sample.CreatedAt
+        };
     }
 
-    public async Task<bool> UpdateSampleAsync(int id, SampleDto sampleDto)
+    public async Task<bool> UpdateSampleAsync(int id, SampleRequest request)
     {
         var sample = await _context.Samples.FindAsync(id);
         if (sample == null) return false;
 
-        sample.Name = sampleDto.Name;
-        sample.Description = sampleDto.Description;
-        sample.CreatedAt = DateTime.UtcNow; // Update timestamp
+        sample.Name = request.Name;
+        sample.Description = request.Description;
 
-        try
-        {
-            await _context.SaveChangesAsync();
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
+        await _context.SaveChangesAsync();
+        return true;
     }
 
     public async Task<bool> DeleteSampleAsync(int id)
