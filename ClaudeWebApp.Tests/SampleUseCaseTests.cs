@@ -39,28 +39,23 @@ public class SampleUseCaseTests
     [Test]
     public async Task GetAllSamplesAsync_EmptyDatabase_ReturnsEmptyList()
     {
-        // Act
         var result = await _sampleUseCase.GetAllSamplesAsync();
 
-        // Assert
         Assert.That(result, Is.Not.Null);
-        Assert.That(result, Is.Empty);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Items, Is.Empty);
+            Assert.That(result.TotalCount, Is.EqualTo(0));
+        });
     }
 
     [Test]
-    public async Task CreateSampleAsync_ValidDto_ReturnsCreatedSample()
+    public async Task CreateSampleAsync_ValidRequest_ReturnsCreatedSample()
     {
-        // Arrange
-        var sampleDto = new SampleDto
-        {
-            Name = "Test Sample",
-            Description = "Test Description"
-        };
+        var request = new SampleRequest { Name = "Test Sample", Description = "Test Description" };
 
-        // Act
-        var result = await _sampleUseCase.CreateSampleAsync(sampleDto);
+        var result = await _sampleUseCase.CreateSampleAsync(request);
 
-        // Assert
         Assert.That(result, Is.Not.Null);
         Assert.Multiple(() =>
         {
@@ -74,137 +69,178 @@ public class SampleUseCaseTests
     [Test]
     public async Task GetSampleByIdAsync_ExistingId_ReturnsSample()
     {
-        // Arrange
-        var sampleDto = new SampleDto
-        {
-            Name = "Test Sample",
-            Description = "Test Description"
-        };
-        var createdSample = await _sampleUseCase.CreateSampleAsync(sampleDto);
+        var request = new SampleRequest { Name = "Test Sample", Description = "Test Description" };
+        var created = await _sampleUseCase.CreateSampleAsync(request);
 
-        // Act
-        var result = await _sampleUseCase.GetSampleByIdAsync(createdSample.Id);
+        var result = await _sampleUseCase.GetSampleByIdAsync(created.Id);
 
-        // Assert
         Assert.That(result, Is.Not.Null);
         Assert.Multiple(() =>
         {
-            Assert.That(result.Id, Is.EqualTo(createdSample.Id));
-            Assert.That(result.Name, Is.EqualTo(createdSample.Name));
-            Assert.That(result.Description, Is.EqualTo(createdSample.Description));
+            Assert.That(result.Id, Is.EqualTo(created.Id));
+            Assert.That(result.Name, Is.EqualTo(created.Name));
+            Assert.That(result.Description, Is.EqualTo(created.Description));
         });
     }
 
     [Test]
     public async Task GetSampleByIdAsync_NonExistingId_ReturnsNull()
     {
-        // Act
         var result = await _sampleUseCase.GetSampleByIdAsync(999);
 
-        // Assert
         Assert.That(result, Is.Null);
     }
 
     [Test]
     public async Task UpdateSampleAsync_ExistingId_ReturnsTrue()
     {
-        // Arrange
-        var sampleDto = new SampleDto
-        {
-            Name = "Original Name",
-            Description = "Original Description"
-        };
-        var createdSample = await _sampleUseCase.CreateSampleAsync(sampleDto);
+        var created = await _sampleUseCase.CreateSampleAsync(
+            new SampleRequest { Name = "Original", Description = "Original Desc" });
 
-        var updateDto = new SampleDto
-        {
-            Name = "Updated Name",
-            Description = "Updated Description"
-        };
+        var success = await _sampleUseCase.UpdateSampleAsync(created.Id,
+            new SampleRequest { Name = "Updated", Description = "Updated Desc" });
 
-        // Act
-        var result = await _sampleUseCase.UpdateSampleAsync(createdSample.Id, updateDto);
+        Assert.That(success, Is.True);
 
-        // Assert
-        Assert.That(result, Is.True);
-
-        // Verify the update
-        var updatedSample = await _sampleUseCase.GetSampleByIdAsync(createdSample.Id);
-        Assert.That(updatedSample, Is.Not.Null);
+        var updated = await _sampleUseCase.GetSampleByIdAsync(created.Id);
+        Assert.That(updated, Is.Not.Null);
         Assert.Multiple(() =>
         {
-            Assert.That(updatedSample.Name, Is.EqualTo("Updated Name"));
-            Assert.That(updatedSample.Description, Is.EqualTo("Updated Description"));
-            Assert.That(updatedSample.CreatedAt, Is.EqualTo(createdSample.CreatedAt));
+            Assert.That(updated.Name, Is.EqualTo("Updated"));
+            Assert.That(updated.Description, Is.EqualTo("Updated Desc"));
+            Assert.That(updated.CreatedAt, Is.EqualTo(created.CreatedAt).Within(TimeSpan.FromSeconds(1)));
         });
     }
 
     [Test]
     public async Task UpdateSampleAsync_NonExistingId_ReturnsFalse()
     {
-        // Arrange
-        var updateDto = new SampleDto
-        {
-            Name = "Updated Name",
-            Description = "Updated Description"
-        };
+        var result = await _sampleUseCase.UpdateSampleAsync(999,
+            new SampleRequest { Name = "Updated", Description = "Updated Desc" });
 
-        // Act
-        var result = await _sampleUseCase.UpdateSampleAsync(999, updateDto);
-
-        // Assert
         Assert.That(result, Is.False);
     }
 
     [Test]
     public async Task DeleteSampleAsync_ExistingId_ReturnsTrue()
     {
-        // Arrange
-        var sampleDto = new SampleDto
-        {
-            Name = "Test Sample",
-            Description = "Test Description"
-        };
-        var createdSample = await _sampleUseCase.CreateSampleAsync(sampleDto);
+        var created = await _sampleUseCase.CreateSampleAsync(
+            new SampleRequest { Name = "Test Sample", Description = "Test Description" });
 
-        // Act
-        var result = await _sampleUseCase.DeleteSampleAsync(createdSample.Id);
+        var success = await _sampleUseCase.DeleteSampleAsync(created.Id);
 
-        // Assert
-        Assert.That(result, Is.True);
-
-        // Verify deletion
-        var deletedSample = await _sampleUseCase.GetSampleByIdAsync(createdSample.Id);
-        Assert.That(deletedSample, Is.Null);
+        Assert.That(success, Is.True);
+        Assert.That(await _sampleUseCase.GetSampleByIdAsync(created.Id), Is.Null);
     }
 
     [Test]
     public async Task DeleteSampleAsync_NonExistingId_ReturnsFalse()
     {
-        // Act
         var result = await _sampleUseCase.DeleteSampleAsync(999);
 
-        // Assert
         Assert.That(result, Is.False);
     }
 
     [Test]
-    public async Task GetAllSamplesAsync_MultipleSamples_ReturnsAllSamples()
+    public async Task GetAllSamplesAsync_MultipleSamples_ReturnsPaginatedResult()
     {
-        // Arrange
-        var sample1 = new SampleDto { Name = "Sample 1", Description = "Desc 1" };
-        var sample2 = new SampleDto { Name = "Sample 2", Description = "Desc 2" };
+        await _sampleUseCase.CreateSampleAsync(new SampleRequest { Name = "Sample 1", Description = "Desc 1" });
+        await _sampleUseCase.CreateSampleAsync(new SampleRequest { Name = "Sample 2", Description = "Desc 2" });
 
-        await _sampleUseCase.CreateSampleAsync(sample1);
-        await _sampleUseCase.CreateSampleAsync(sample2);
+        var result = await _sampleUseCase.GetAllSamplesAsync(page: 1, pageSize: 20);
 
-        // Act
-        var result = (await _sampleUseCase.GetAllSamplesAsync()).ToList();
-
-        // Assert
         Assert.That(result, Is.Not.Null);
-        Assert.That(result, Has.Count.EqualTo(2));
-        Assert.That(result, Has.Some.Matches<Sample>(s => s.Name == "Sample 1"));
-        Assert.That(result, Has.Some.Matches<Sample>(s => s.Name == "Sample 2"));
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.TotalCount, Is.EqualTo(2));
+            Assert.That(result.Items, Has.Some.Matches<SampleResponse>(s => s.Name == "Sample 1"));
+            Assert.That(result.Items, Has.Some.Matches<SampleResponse>(s => s.Name == "Sample 2"));
+        });
+    }
+
+    [Test]
+    public async Task GetAllSamplesAsync_WithNameFilter_ReturnsFilteredResult()
+    {
+        await _sampleUseCase.CreateSampleAsync(new SampleRequest { Name = "Apple", Description = "" });
+        await _sampleUseCase.CreateSampleAsync(new SampleRequest { Name = "Banana", Description = "" });
+
+        var result = await _sampleUseCase.GetAllSamplesAsync(nameFilter: "App");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.TotalCount, Is.EqualTo(1));
+            Assert.That(result.Items.First().Name, Is.EqualTo("Apple"));
+        });
+    }
+
+    [Test]
+    public async Task GetAllSamplesAsync_WithPagination_ReturnsCorrectPage()
+    {
+        for (int i = 1; i <= 5; i++)
+            await _sampleUseCase.CreateSampleAsync(new SampleRequest { Name = $"Sample {i}", Description = "" });
+
+        var result = await _sampleUseCase.GetAllSamplesAsync(page: 2, pageSize: 2);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.TotalCount, Is.EqualTo(5));
+            Assert.That(result.Items.Count(), Is.EqualTo(2));
+            Assert.That(result.Page, Is.EqualTo(2));
+            Assert.That(result.TotalPages, Is.EqualTo(3));
+        });
+    }
+
+    [Test]
+    public async Task GetAllSamplesAsync_WithSortByName_ReturnsSortedResult()
+    {
+        await _sampleUseCase.CreateSampleAsync(new SampleRequest { Name = "Zebra", Description = "" });
+        await _sampleUseCase.CreateSampleAsync(new SampleRequest { Name = "Alpha", Description = "" });
+
+        var result = await _sampleUseCase.GetAllSamplesAsync(sortBy: "name");
+        var names = result.Items.Select(s => s.Name).ToList();
+
+        Assert.That(names, Is.EqualTo(new[] { "Alpha", "Zebra" }));
+    }
+
+    [Test]
+    public async Task GetAllSamplesAsync_WithSortByNameDescending_ReturnsSortedResult()
+    {
+        await _sampleUseCase.CreateSampleAsync(new SampleRequest { Name = "Alpha", Description = "" });
+        await _sampleUseCase.CreateSampleAsync(new SampleRequest { Name = "Zebra", Description = "" });
+
+        var result = await _sampleUseCase.GetAllSamplesAsync(sortBy: "name", descending: true);
+        var names = result.Items.Select(s => s.Name).ToList();
+
+        Assert.That(names, Is.EqualTo(new[] { "Zebra", "Alpha" }));
+    }
+
+    [Test]
+    public async Task GetAllSamplesAsync_WithSortByCreatedAt_ReturnsSortedResult()
+    {
+        var first = await _sampleUseCase.CreateSampleAsync(new SampleRequest { Name = "First", Description = "" });
+        await Task.Delay(1100); // MySQL DATETIME 秒精度の差をつける
+        await _sampleUseCase.CreateSampleAsync(new SampleRequest { Name = "Second", Description = "" });
+
+        var result = await _sampleUseCase.GetAllSamplesAsync(sortBy: "createdAt");
+        var names = result.Items.Select(s => s.Name).ToList();
+
+        Assert.That(names, Is.EqualTo(new[] { "First", "Second" }));
+    }
+
+    [Test]
+    public async Task GetAllSamplesAsync_LastPage_ReturnsRemainingItems()
+    {
+        for (int i = 1; i <= 5; i++)
+            await _sampleUseCase.CreateSampleAsync(new SampleRequest { Name = $"Sample {i}", Description = "" });
+
+        var result = await _sampleUseCase.GetAllSamplesAsync(page: 3, pageSize: 2);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.TotalCount, Is.EqualTo(5));
+            Assert.That(result.Items.Count(), Is.EqualTo(1));
+            Assert.That(result.Page, Is.EqualTo(3));
+            Assert.That(result.TotalPages, Is.EqualTo(3));
+        });
     }
 }
