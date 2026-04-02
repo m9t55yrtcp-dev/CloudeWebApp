@@ -5,11 +5,28 @@ using ClaudeWebApp.UseCases;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+var mySqlConnection = Environment.GetEnvironmentVariable("MYSQL_CONNECTION");
+if (!string.IsNullOrEmpty(mySqlConnection))
+{
+    builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        options.UseMySql(mySqlConnection, ServerVersion.AutoDetect(mySqlConnection)));
+}
+else
+{
+    builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+}
+
 builder.Services.AddScoped<ISampleUseCase, SampleUseCase>();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    db.Database.EnsureCreated();
+}
 
 app.MapGet("/", () => "Hello World!");
 app.MapControllers();
