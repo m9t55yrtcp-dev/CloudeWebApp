@@ -1,5 +1,8 @@
 using NUnit.Framework;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 using ClaudeWebApp.Data;
 using ClaudeWebApp.UseCases;
 using ClaudeWebApp.Models;
@@ -26,7 +29,9 @@ public class SampleUseCaseTests
 
         _context = new ApplicationDbContext(options);
         _context.Database.EnsureCreated();
-        _sampleUseCase = new SampleUseCase(_context);
+
+        var cache = new MemoryDistributedCache(Options.Create(new MemoryDistributedCacheOptions()));
+        _sampleUseCase = new SampleUseCase(_context, cache);
     }
 
     [TearDown]

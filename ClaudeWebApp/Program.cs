@@ -20,6 +20,17 @@ else
         options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 }
 
+var redisConnection = Environment.GetEnvironmentVariable("REDIS_CONNECTION");
+if (!string.IsNullOrEmpty(redisConnection))
+{
+    builder.Services.AddStackExchangeRedisCache(options =>
+        options.Configuration = redisConnection);
+}
+else
+{
+    builder.Services.AddDistributedMemoryCache();
+}
+
 builder.Services.AddScoped<ISampleUseCase, SampleUseCase>();
 
 var app = builder.Build();
