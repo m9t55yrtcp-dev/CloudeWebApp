@@ -31,6 +31,7 @@ services:
     environment:
       MYSQL_CONNECTION: "Server=mysql;Database=claudewebapp;User=root;Password=root;"
       REDIS_CONNECTION: "redis:6379"
+      TZ: "Asia/Tokyo"
     depends_on:
       mysql:
         condition: service_healthy

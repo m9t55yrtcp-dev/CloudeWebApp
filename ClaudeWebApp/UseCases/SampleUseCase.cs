@@ -124,7 +124,7 @@ public class SampleUseCase : ISampleUseCase
         {
             Name = request.Name,
             Description = request.Description,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.Now
         };
 
         _context.Samples.Add(sample);
