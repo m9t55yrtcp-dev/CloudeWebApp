@@ -5,6 +5,8 @@ using ClaudeWebApp.UseCases;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 var mySqlConnection = Environment.GetEnvironmentVariable("MYSQL_CONNECTION");
 if (!string.IsNullOrEmpty(mySqlConnection))
@@ -27,6 +29,9 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.EnsureCreated();
 }
+
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.MapGet("/", () => "Hello World!");
 app.MapControllers();
