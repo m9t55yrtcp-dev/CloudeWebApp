@@ -7,7 +7,7 @@ ASP.NET Core 8 で構築した REST API サーバー。`Sample` リソースの 
 ## 技術スタック
 
 | 項目 | 内容 |
-|------|------|
+| ---- | ---- |
 | フレームワーク | ASP.NET Core 8 |
 | ORM | Entity Framework Core 8 |
 | DB（本番） | SQLite |
@@ -33,15 +33,37 @@ Controller
 ### `Sample`（エンティティ）
 
 | フィールド | 型 | 説明 |
-|-----------|-----|------|
+| --------- | -- | ---- |
 | `Id` | `int` | 主キー（AUTO INCREMENT） |
-| `Name` | `string` | 名前（必須） |
-| `Description` | `string` | 説明（必須） |
-| `CreatedAt` | `DateTime` | 作成日時（UTC） |
+| `Name` | `string` | 名前（必須、最大100文字） |
+| `Description` | `string` | 説明（最大500文字） |
+| `CreatedAt` | `DateTime` | 作成日時（UTC、更新不可） |
 
-### `SampleDto`（入出力）
+### `SampleRequest`（リクエスト）
 
-`Sample` と同じフィールド構成。作成時は `Id` / `CreatedAt` をリクエストボディに含めても無視される。
+| フィールド | 型 | バリデーション |
+| --------- | --- | ------------ |
+| `Name` | `string` | Required、MaxLength(100) |
+| `Description` | `string` | MaxLength(500) |
+
+### `SampleResponse`（レスポンス）
+
+| フィールド | 型 |
+| --------- | -- |
+| `Id` | `int` |
+| `Name` | `string` |
+| `Description` | `string` |
+| `CreatedAt` | `DateTime` |
+
+### `PagedResult<T>`（ページネーションラッパー）
+
+| フィールド | 型 | 説明 |
+| --------- | -- | ---- |
+| `Items` | `IEnumerable<T>` | 取得したアイテム一覧 |
+| `TotalCount` | `int` | 全件数 |
+| `Page` | `int` | 現在のページ番号 |
+| `PageSize` | `int` | 1ページあたりの件数 |
+| `TotalPages` | `int` | 総ページ数（算出値） |
 
 ## API エンドポイント
 
@@ -49,31 +71,41 @@ Controller
 
 ### GET `/api/samples`
 
-全件取得。
+全件取得（ページネーション・ソート・フィルタ対応）。
 
-- レスポンス: `200 OK` + `SampleDto[]`
+| クエリパラメータ | 型 | デフォルト | 説明 |
+| -------------- | -- | --------- | ---- |
+| `page` | `int` | `1` | ページ番号 |
+| `pageSize` | `int` | `20` | 1ページあたりの件数 |
+| `sortBy` | `string` | なし | `name` または `createdAt` |
+| `descending` | `bool` | `false` | 降順にする場合 `true` |
+| `nameFilter` | `string` | なし | 名前の部分一致フィルタ |
+
+- レスポンス: `200 OK` + `PagedResult<SampleResponse>`
 
 ### GET `/api/samples/{id}`
 
 ID 指定で1件取得。
 
-- レスポンス: `200 OK` + `SampleDto`
+- レスポンス: `200 OK` + `SampleResponse`
 - 存在しない場合: `404 Not Found`
 
 ### POST `/api/samples`
 
 新規作成。
 
-- リクエストボディ: `{ "name": "...", "description": "..." }`
-- レスポンス: `201 Created` + `SampleDto`（`Location` ヘッダーあり）
+- リクエストボディ: `SampleRequest`
+- レスポンス: `201 Created` + `SampleResponse`（`Location` ヘッダーあり）
+- バリデーションエラー: `400 Bad Request`
 
 ### PUT `/api/samples/{id}`
 
-更新。
+更新（`CreatedAt` は変更不可）。
 
-- リクエストボディ: `{ "name": "...", "description": "..." }`
+- リクエストボディ: `SampleRequest`
 - レスポンス: `204 No Content`
 - 存在しない場合: `404 Not Found`
+- バリデーションエラー: `400 Bad Request`
 
 ### DELETE `/api/samples/{id}`
 
@@ -94,14 +126,3 @@ dotnet test ClaudeWebApp.Tests/
 ```
 
 各テストケースは `EnsureCreated` / `EnsureDeleted` により独立した DB で実行される。
-
-## 既知の問題・改善候補
-
-| 優先度 | 内容 |
-|--------|------|
-| 高 | `UpdateSampleAsync` が更新時に `CreatedAt` を上書きしている（作成日時は不変であるべき） |
-| 高 | バリデーションが未実装（`Name` / `Description` の必須チェック、文字数制限など） |
-| 中 | エラーハンドリングが不十分（`UpdateSampleAsync` の `catch` が全例外を握りつぶしている） |
-| 中 | `SampleDto` をリクエスト用・レスポンス用に分離すべき（現状は1クラスを兼用） |
-| 低 | ページネーション未対応（全件取得のみ） |
-| 低 | `GET /api/samples` のソート・フィルタ未対応 |
