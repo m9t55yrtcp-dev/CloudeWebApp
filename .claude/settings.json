@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker compose:*)",
+      "Bash(/usr/local/bin/docker compose:*)",
+      "Bash(/Applications/Docker.app/Contents/Resources/bin/docker compose:*)",
+      "Read(//usr/**)"
+    ]
+  }
+}
