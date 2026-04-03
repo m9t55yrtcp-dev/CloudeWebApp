@@ -151,6 +151,35 @@ public class SampleUseCaseTests
         names.ShouldBe(new[] { "First", "Second" });
     }
 
+    [Test]
+    public async Task GetAllSamplesAsync_WithSortByCreatedAtDescending_ReturnsSortedResult()
+    {
+        await _sampleUseCase.CreateSampleAsync(new SampleRequest { Name = "First", Description = "" });
+        await Task.Delay(1100); // MySQL DATETIME 秒精度の差をつける
+        await _sampleUseCase.CreateSampleAsync(new SampleRequest { Name = "Second", Description = "" });
+
+        var result = await _sampleUseCase.GetAllSamplesAsync(sortBy: "createdAt", descending: true);
+        var names = result.Items.Select(s => s.Name).ToList();
+
+        names.ShouldBe(new[] { "Second", "First" });
+    }
+
+    [Test]
+    public async Task GetAllSamplesAsync_SecondCall_ReturnsCachedResult()
+    {
+        await _sampleUseCase.CreateSampleAsync(new SampleRequest { Name = "Cached", Description = "" });
+
+        var first = await _sampleUseCase.GetAllSamplesAsync();
+
+        // DBを直接書き換えてもキャッシュから古い値が返ることを確認
+        await _context.Samples
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Name, "DirectUpdate"));
+
+        var second = await _sampleUseCase.GetAllSamplesAsync();
+
+        second.Items.First().Name.ShouldBe(first.Items.First().Name);
+    }
+
     // -----------------------------------------------------------------------
     // GetSampleByIdAsync
     // -----------------------------------------------------------------------

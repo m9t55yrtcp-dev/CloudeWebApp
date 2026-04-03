@@ -47,3 +47,8 @@ app.UseSwaggerUI();
 app.MapControllers();
 
 app.Run();
+
+#pragma warning disable ASP0027
+[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+public partial class Program { }
+#pragma warning restore ASP0027
