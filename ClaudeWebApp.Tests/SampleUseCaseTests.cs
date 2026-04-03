@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using Shouldly;
 using ClaudeWebApp.Data;
 using ClaudeWebApp.UseCases;
 using ClaudeWebApp.Models;
@@ -50,12 +51,9 @@ public class SampleUseCaseTests
     {
         var result = await _sampleUseCase.GetAllSamplesAsync();
 
-        Assert.That(result, Is.Not.Null);
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.Items, Is.Empty);
-            Assert.That(result.TotalCount, Is.EqualTo(0));
-        });
+        result.ShouldNotBeNull();
+        result.Items.ShouldBeEmpty();
+        result.TotalCount.ShouldBe(0);
     }
 
     [Test]
@@ -66,13 +64,10 @@ public class SampleUseCaseTests
 
         var result = await _sampleUseCase.GetAllSamplesAsync(page: 1, pageSize: 20);
 
-        Assert.That(result, Is.Not.Null);
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.TotalCount, Is.EqualTo(2));
-            Assert.That(result.Items, Has.Some.Matches<SampleResponse>(s => s.Name == "Sample 1"));
-            Assert.That(result.Items, Has.Some.Matches<SampleResponse>(s => s.Name == "Sample 2"));
-        });
+        result.ShouldNotBeNull();
+        result.TotalCount.ShouldBe(2);
+        result.Items.ShouldContain(s => s.Name == "Sample 1");
+        result.Items.ShouldContain(s => s.Name == "Sample 2");
     }
 
     [Test]
@@ -83,11 +78,8 @@ public class SampleUseCaseTests
 
         var result = await _sampleUseCase.GetAllSamplesAsync(nameFilter: "App");
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.TotalCount, Is.EqualTo(1));
-            Assert.That(result.Items.First().Name, Is.EqualTo("Apple"));
-        });
+        result.TotalCount.ShouldBe(1);
+        result.Items.First().Name.ShouldBe("Apple");
     }
 
     [Test]
@@ -98,13 +90,12 @@ public class SampleUseCaseTests
 
         var result = await _sampleUseCase.GetAllSamplesAsync(page: 2, pageSize: 2);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.TotalCount, Is.EqualTo(5));
-            Assert.That(result.Items.Count(), Is.EqualTo(2));
-            Assert.That(result.Page, Is.EqualTo(2));
-            Assert.That(result.TotalPages, Is.EqualTo(3));
-        });
+        result.ShouldSatisfyAllConditions(
+            () => result.TotalCount.ShouldBe(5),
+            () => result.Items.Count().ShouldBe(2),
+            () => result.Page.ShouldBe(2),
+            () => result.TotalPages.ShouldBe(3)
+        );
     }
 
     [Test]
@@ -115,13 +106,12 @@ public class SampleUseCaseTests
 
         var result = await _sampleUseCase.GetAllSamplesAsync(page: 3, pageSize: 2);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.TotalCount, Is.EqualTo(5));
-            Assert.That(result.Items.Count(), Is.EqualTo(1));
-            Assert.That(result.Page, Is.EqualTo(3));
-            Assert.That(result.TotalPages, Is.EqualTo(3));
-        });
+        result.ShouldSatisfyAllConditions(
+            () => result.TotalCount.ShouldBe(5),
+            () => result.Items.Count().ShouldBe(1),
+            () => result.Page.ShouldBe(3),
+            () => result.TotalPages.ShouldBe(3)
+        );
     }
 
     [Test]
@@ -133,7 +123,7 @@ public class SampleUseCaseTests
         var result = await _sampleUseCase.GetAllSamplesAsync(sortBy: "name");
         var names = result.Items.Select(s => s.Name).ToList();
 
-        Assert.That(names, Is.EqualTo(new[] { "Alpha", "Zebra" }));
+        names.ShouldBe(new[] { "Alpha", "Zebra" });
     }
 
     [Test]
@@ -145,7 +135,7 @@ public class SampleUseCaseTests
         var result = await _sampleUseCase.GetAllSamplesAsync(sortBy: "name", descending: true);
         var names = result.Items.Select(s => s.Name).ToList();
 
-        Assert.That(names, Is.EqualTo(new[] { "Zebra", "Alpha" }));
+        names.ShouldBe(new[] { "Zebra", "Alpha" });
     }
 
     [Test]
@@ -158,7 +148,7 @@ public class SampleUseCaseTests
         var result = await _sampleUseCase.GetAllSamplesAsync(sortBy: "createdAt");
         var names = result.Items.Select(s => s.Name).ToList();
 
-        Assert.That(names, Is.EqualTo(new[] { "First", "Second" }));
+        names.ShouldBe(new[] { "First", "Second" });
     }
 
     // -----------------------------------------------------------------------
@@ -173,13 +163,12 @@ public class SampleUseCaseTests
 
         var result = await _sampleUseCase.GetSampleByIdAsync(created.Id);
 
-        Assert.That(result, Is.Not.Null);
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.Id, Is.EqualTo(created.Id));
-            Assert.That(result.Name, Is.EqualTo(created.Name));
-            Assert.That(result.Description, Is.EqualTo(created.Description));
-        });
+        result.ShouldNotBeNull();
+        result.ShouldSatisfyAllConditions(
+            () => result.Id.ShouldBe(created.Id),
+            () => result.Name.ShouldBe(created.Name),
+            () => result.Description.ShouldBe(created.Description)
+        );
     }
 
     [Test]
@@ -187,7 +176,7 @@ public class SampleUseCaseTests
     {
         var result = await _sampleUseCase.GetSampleByIdAsync(999);
 
-        Assert.That(result, Is.Null);
+        result.ShouldBeNull();
     }
 
     [Test]
@@ -205,7 +194,7 @@ public class SampleUseCaseTests
 
         var second = await _sampleUseCase.GetSampleByIdAsync(created.Id);
 
-        Assert.That(second!.Name, Is.EqualTo(first!.Name));
+        second!.Name.ShouldBe(first!.Name);
     }
 
     // -----------------------------------------------------------------------
@@ -219,15 +208,14 @@ public class SampleUseCaseTests
 
         var result = await _sampleUseCase.CreateSampleAsync(request);
 
-        Assert.That(result, Is.Not.Null);
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.Id, Is.GreaterThan(0));
-            Assert.That(result.Name, Is.EqualTo("Test Sample"));
-            Assert.That(result.Description, Is.EqualTo("Test Description"));
-            Assert.That(result.CreatedAt, Is.Not.EqualTo(default(DateTime)));
-            Assert.That(result.DeletedAt, Is.Null);
-        });
+        result.ShouldNotBeNull();
+        result.ShouldSatisfyAllConditions(
+            () => result.Id.ShouldBeGreaterThan(0),
+            () => result.Name.ShouldBe("Test Sample"),
+            () => result.Description.ShouldBe("Test Description"),
+            () => result.CreatedAt.ShouldNotBe(default),
+            () => result.DeletedAt.ShouldBeNull()
+        );
     }
 
     [Test]
@@ -236,7 +224,7 @@ public class SampleUseCaseTests
         var result = await _sampleUseCase.CreateSampleAsync(
             new SampleRequest { Name = "Test", Description = "" });
 
-        Assert.That(result.UpdatedAt, Is.EqualTo(result.CreatedAt).Within(TimeSpan.FromSeconds(1)));
+        result.UpdatedAt.ShouldBe(result.CreatedAt, tolerance: TimeSpan.FromSeconds(1));
     }
 
     // -----------------------------------------------------------------------
@@ -252,16 +240,15 @@ public class SampleUseCaseTests
         var success = await _sampleUseCase.UpdateSampleAsync(created.Id,
             new SampleRequest { Name = "Updated", Description = "Updated Desc" });
 
-        Assert.That(success, Is.True);
+        success.ShouldBeTrue();
 
         var updated = await _sampleUseCase.GetSampleByIdAsync(created.Id);
-        Assert.That(updated, Is.Not.Null);
-        Assert.Multiple(() =>
-        {
-            Assert.That(updated.Name, Is.EqualTo("Updated"));
-            Assert.That(updated.Description, Is.EqualTo("Updated Desc"));
-            Assert.That(updated.CreatedAt, Is.EqualTo(created.CreatedAt).Within(TimeSpan.FromSeconds(1)));
-        });
+        updated.ShouldNotBeNull();
+        updated.ShouldSatisfyAllConditions(
+            () => updated.Name.ShouldBe("Updated"),
+            () => updated.Description.ShouldBe("Updated Desc"),
+            () => updated.CreatedAt.ShouldBe(created.CreatedAt, tolerance: TimeSpan.FromSeconds(1))
+        );
     }
 
     [Test]
@@ -275,11 +262,8 @@ public class SampleUseCaseTests
             new SampleRequest { Name = "Updated", Description = "" });
 
         var updated = await _sampleUseCase.GetSampleByIdAsync(created.Id);
-        Assert.Multiple(() =>
-        {
-            Assert.That(updated!.UpdatedAt, Is.GreaterThan(created.UpdatedAt));
-            Assert.That(updated.CreatedAt, Is.EqualTo(created.CreatedAt).Within(TimeSpan.FromSeconds(1)));
-        });
+        updated!.UpdatedAt.ShouldBeGreaterThan(created.UpdatedAt);
+        updated.CreatedAt.ShouldBe(created.CreatedAt, tolerance: TimeSpan.FromSeconds(1));
     }
 
     [Test]
@@ -288,15 +272,13 @@ public class SampleUseCaseTests
         var created = await _sampleUseCase.CreateSampleAsync(
             new SampleRequest { Name = "Before", Description = "" });
 
-        // キャッシュに載せる
         await _sampleUseCase.GetSampleByIdAsync(created.Id);
 
-        // UseCase 経由で更新（キャッシュが無効化される）
         await _sampleUseCase.UpdateSampleAsync(created.Id,
             new SampleRequest { Name = "After", Description = "" });
 
         var result = await _sampleUseCase.GetSampleByIdAsync(created.Id);
-        Assert.That(result!.Name, Is.EqualTo("After"));
+        result!.Name.ShouldBe("After");
     }
 
     [Test]
@@ -305,7 +287,7 @@ public class SampleUseCaseTests
         var result = await _sampleUseCase.UpdateSampleAsync(999,
             new SampleRequest { Name = "Updated", Description = "Updated Desc" });
 
-        Assert.That(result, Is.False);
+        result.ShouldBeFalse();
     }
 
     // -----------------------------------------------------------------------
@@ -320,7 +302,7 @@ public class SampleUseCaseTests
 
         var success = await _sampleUseCase.DeleteSampleAsync(created.Id);
 
-        Assert.That(success, Is.True);
+        success.ShouldBeTrue();
     }
 
     [Test]
@@ -331,13 +313,12 @@ public class SampleUseCaseTests
 
         await _sampleUseCase.DeleteSampleAsync(created.Id);
 
-        // グローバルフィルタを無視してDBを直接確認
         var raw = await _context.Samples
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(s => s.Id == created.Id);
 
-        Assert.That(raw, Is.Not.Null);
-        Assert.That(raw!.DeletedAt, Is.Not.Null);
+        raw.ShouldNotBeNull();
+        raw!.DeletedAt.ShouldNotBeNull();
     }
 
     [Test]
@@ -348,7 +329,7 @@ public class SampleUseCaseTests
 
         await _sampleUseCase.DeleteSampleAsync(created.Id);
 
-        Assert.That(await _sampleUseCase.GetSampleByIdAsync(created.Id), Is.Null);
+        (await _sampleUseCase.GetSampleByIdAsync(created.Id)).ShouldBeNull();
     }
 
     [Test]
@@ -362,11 +343,8 @@ public class SampleUseCaseTests
         await _sampleUseCase.DeleteSampleAsync(created.Id);
 
         var result = await _sampleUseCase.GetAllSamplesAsync();
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.TotalCount, Is.EqualTo(1));
-            Assert.That(result.Items.All(s => s.Name != "ToDelete"), Is.True);
-        });
+        result.TotalCount.ShouldBe(1);
+        result.Items.ShouldAllBe(s => s.Name != "ToDelete");
     }
 
     [Test]
@@ -375,13 +353,10 @@ public class SampleUseCaseTests
         var created = await _sampleUseCase.CreateSampleAsync(
             new SampleRequest { Name = "Test", Description = "" });
 
-        // キャッシュに載せる
         await _sampleUseCase.GetSampleByIdAsync(created.Id);
-
-        // 削除（キャッシュが無効化される）
         await _sampleUseCase.DeleteSampleAsync(created.Id);
 
-        Assert.That(await _sampleUseCase.GetSampleByIdAsync(created.Id), Is.Null);
+        (await _sampleUseCase.GetSampleByIdAsync(created.Id)).ShouldBeNull();
     }
 
     [Test]
@@ -389,6 +364,6 @@ public class SampleUseCaseTests
     {
         var result = await _sampleUseCase.DeleteSampleAsync(999);
 
-        Assert.That(result, Is.False);
+        result.ShouldBeFalse();
     }
 }
