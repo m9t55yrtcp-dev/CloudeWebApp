@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using ClaudeWebApp.DTOs;
 using ClaudeWebApp.UseCases;
-using ClaudeWebApp.Models;
 
 namespace ClaudeWebApp.Controllers;
 

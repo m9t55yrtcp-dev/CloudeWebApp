@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace ClaudeWebApp.Models;
+namespace ClaudeWebApp.DTOs;
 
 public class SampleRequest
 {

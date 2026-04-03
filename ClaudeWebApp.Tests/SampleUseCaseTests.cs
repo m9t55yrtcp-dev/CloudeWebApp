@@ -5,6 +5,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Shouldly;
 using ClaudeWebApp.Data;
+using ClaudeWebApp.DTOs;
 using ClaudeWebApp.UseCases;
 using ClaudeWebApp.Models;
 

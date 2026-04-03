@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using ClaudeWebApp.Data;
+using ClaudeWebApp.DTOs;
 using ClaudeWebApp.Models;
 
 namespace ClaudeWebApp.UseCases;

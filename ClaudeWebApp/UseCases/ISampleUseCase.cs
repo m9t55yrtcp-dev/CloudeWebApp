@@ -1,4 +1,4 @@
-using ClaudeWebApp.Models;
+using ClaudeWebApp.DTOs;
 
 namespace ClaudeWebApp.UseCases;
 

@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using Shouldly;
 using ClaudeWebApp.Data;
+using ClaudeWebApp.DTOs;
 using ClaudeWebApp.Models;
 using ClaudeWebApp.UseCases;
 

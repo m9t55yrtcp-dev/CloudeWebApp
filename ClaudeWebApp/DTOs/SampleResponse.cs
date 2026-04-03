@@ -1,4 +1,4 @@
-namespace ClaudeWebApp.Models;
+namespace ClaudeWebApp.DTOs;
 
 public class SampleResponse
 {
