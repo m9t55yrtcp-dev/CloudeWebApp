@@ -44,6 +44,16 @@ public class SampleUseCase : ISampleUseCase
         await _cache.SetStringAsync(VersionKey, (ver + 1).ToString(), VersionCacheOptions);
     }
 
+    private static SampleResponse ToResponse(Sample s) => new()
+    {
+        Id = s.Id,
+        Name = s.Name,
+        Description = s.Description,
+        CreatedAt = s.CreatedAt,
+        UpdatedAt = s.UpdatedAt,
+        DeletedAt = s.DeletedAt
+    };
+
     public async Task<PagedResult<SampleResponse>> GetAllSamplesAsync(
         int page = 1,
         int pageSize = 20,
@@ -74,13 +84,7 @@ public class SampleUseCase : ISampleUseCase
         var items = await query
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(s => new SampleResponse
-            {
-                Id = s.Id,
-                Name = s.Name,
-                Description = s.Description,
-                CreatedAt = s.CreatedAt
-            })
+            .Select(s => ToResponse(s))
             .ToListAsync();
 
         var result = new PagedResult<SampleResponse>
@@ -103,28 +107,23 @@ public class SampleUseCase : ISampleUseCase
         if (cached != null)
             return JsonSerializer.Deserialize<SampleResponse>(cached);
 
-        var sample = await _context.Samples.FindAsync(id);
+        var sample = await _context.Samples.FirstOrDefaultAsync(s => s.Id == id);
         if (sample == null) return null;
 
-        var response = new SampleResponse
-        {
-            Id = sample.Id,
-            Name = sample.Name,
-            Description = sample.Description,
-            CreatedAt = sample.CreatedAt
-        };
-
+        var response = ToResponse(sample);
         await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(response), ItemCacheOptions);
         return response;
     }
 
     public async Task<SampleResponse> CreateSampleAsync(SampleRequest request)
     {
+        var now = DateTime.Now;
         var sample = new Sample
         {
             Name = request.Name,
             Description = request.Description,
-            CreatedAt = DateTime.Now
+            CreatedAt = now,
+            UpdatedAt = now
         };
 
         _context.Samples.Add(sample);
@@ -132,22 +131,17 @@ public class SampleUseCase : ISampleUseCase
 
         await BumpVersionAsync();
 
-        return new SampleResponse
-        {
-            Id = sample.Id,
-            Name = sample.Name,
-            Description = sample.Description,
-            CreatedAt = sample.CreatedAt
-        };
+        return ToResponse(sample);
     }
 
     public async Task<bool> UpdateSampleAsync(int id, SampleRequest request)
     {
-        var sample = await _context.Samples.FindAsync(id);
+        var sample = await _context.Samples.FirstOrDefaultAsync(s => s.Id == id);
         if (sample == null) return false;
 
         sample.Name = request.Name;
         sample.Description = request.Description;
+        sample.UpdatedAt = DateTime.Now;
 
         await _context.SaveChangesAsync();
 
@@ -159,10 +153,10 @@ public class SampleUseCase : ISampleUseCase
 
     public async Task<bool> DeleteSampleAsync(int id)
     {
-        var sample = await _context.Samples.FindAsync(id);
+        var sample = await _context.Samples.FirstOrDefaultAsync(s => s.Id == id);
         if (sample == null) return false;
 
-        _context.Samples.Remove(sample);
+        sample.DeletedAt = DateTime.Now;
         await _context.SaveChangesAsync();
 
         await _cache.RemoveAsync($"sample:{id}");

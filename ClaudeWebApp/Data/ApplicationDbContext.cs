@@ -11,4 +11,10 @@ public class ApplicationDbContext : DbContext
     }
 
     public DbSet<Sample> Samples { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Sample>()
+            .HasQueryFilter(s => s.DeletedAt == null);
+    }
 }
