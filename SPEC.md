@@ -8,13 +8,13 @@ ASP.NET Core 8 で構築した REST API サーバー。`Sample` リソースの 
 
 | 項目 | 内容 |
 | ---- | ---- |
-| フレームワーク | ASP.NET Core 8 |
-| ORM | Entity Framework Core 8 |
-| DB（本番） | MySQL（Pomelo.EntityFrameworkCore.MySql） |
+| フレームワーク | ASP.NET Core 10 |
+| ORM | Entity Framework Core 9（Pomelo 互換のため 9.x） |
+| DB（本番） | MySQL（Pomelo.EntityFrameworkCore.MySql 9.0.0） |
 | DB（ローカル開発） | SQLite（`MYSQL_CONNECTION` 未設定時） |
 | キャッシュ | Redis（`REDIS_CONNECTION` 未設定時はオンメモリ） |
 | API ドキュメント | Swagger UI（`/swagger`） |
-| テストフレームワーク | NUnit 3 |
+| テストフレームワーク | NUnit 4 |
 | テスト用キャッシュ | MemoryDistributedCache（Redis不要） |
 
 ## アーキテクチャ
