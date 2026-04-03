@@ -2,7 +2,7 @@
 
 ## 概要
 
-ASP.NET Core 8 で構築した REST API サーバー。`Sample` リソースの CRUD 操作を提供する。
+ASP.NET Core 10 で構築した REST API サーバー。`Sample` リソースの CRUD 操作を提供する。
 
 ## 技術スタック
 
